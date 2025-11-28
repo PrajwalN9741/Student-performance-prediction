@@ -1,0 +1,59 @@
+{
+    "best_model": "XGBoost",
+    "metrics": {
+        "Logistic Regression": {
+            "accuracy": 0.5949367088607594,
+            "precision_pass": 0.7142857142857143,
+            "recall_pass": 0.660377358490566,
+            "f1_pass": 0.6862745098039216
+        },
+        "SVM (linear kernel)": {
+            "accuracy": 0.5949367088607594,
+            "precision_pass": 0.723404255319149,
+            "recall_pass": 0.6415094339622641,
+            "f1_pass": 0.68
+        },
+        "SVM (RBF kernel)": {
+            "accuracy": 0.6582278481012658,
+            "precision_pass": 0.7096774193548387,
+            "recall_pass": 0.8301886792452831,
+            "f1_pass": 0.7652173913043478
+        },
+        "Random Forest": {
+            "accuracy": 0.6582278481012658,
+            "precision_pass": 0.6805555555555556,
+            "recall_pass": 0.9245283018867925,
+            "f1_pass": 0.784
+        },
+        "XGBoost": {
+            "accuracy": 0.6708860759493671,
+            "precision_pass": 0.7142857142857143,
+            "recall_pass": 0.8490566037735849,
+            "f1_pass": 0.7758620689655172
+        }
+    },
+    "confusion_matrix": [
+        [
+            8,
+            18
+        ],
+        [
+            8,
+            45
+        ]
+    ],
+    "confusion_matrix_normalized": [
+        [
+            0.3076923076923077,
+            0.6923076923076923
+        ],
+        [
+            0.1509433962264151,
+            0.8490566037735849
+        ]
+    ],
+    "confusion_labels": [
+        "Fail",
+        "Pass"
+    ]
+}

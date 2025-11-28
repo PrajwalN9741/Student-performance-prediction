@@ -1,0 +1,667 @@
+{% extends "base.html" %}
+{% block title %}Upload & Analyze | Student Performance{% endblock %}
+
+{% block content %}
+
+<style>
+/* ---------------- DARK MODE FIXES FOR THIS PAGE ---------------- */
+
+/* Hero header fix */
+.hero-card {
+    border-radius: 0.9rem;
+    background: linear-gradient(135deg, #0d6efd, #6f42c1) !important;
+    color: #ffffff !important;
+}
+.hero-card h1,
+.hero-card h2,
+.hero-card h3,
+.hero-card p,
+.hero-card .small {
+    color: #ffffff !important;
+}
+body.dark-mode .hero-card {
+    background: linear-gradient(135deg, #0d6efd, #6f42c1) !important;
+    color: #ffffff !important;
+}
+body.dark-mode .hero-card .text-muted {
+    color: #f8f9fa !important;
+}
+
+/* Light boxes (tips, quick guide, info blocks) */
+body.dark-mode .bg-light,
+body.dark-mode .bg-body-tertiary {
+    background-color: #181818 !important;
+    color: #e9e9e9 !important;
+}
+
+/* Borders a bit darker in dark mode */
+body.dark-mode .border {
+    border-color: #333 !important;
+}
+body.dark-mode hr {
+    border-color: #333 !important;
+}
+
+/* Muted text */
+body.dark-mode .text-muted {
+    color: #bfbfbf !important;
+}
+
+/* Table container */
+body.dark-mode .table-responsive {
+    background-color: #181818 !important;
+}
+
+/* Code blocks */
+body.dark-mode code {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #e9e9e9 !important;
+}
+
+/* Subtle badges */
+body.dark-mode .bg-info-subtle,
+body.dark-mode .badge.bg-info-subtle {
+    background-color: rgba(13, 202, 240, 0.20) !important;
+    color: #cff4fc !important;
+}
+body.dark-mode .bg-primary-subtle {
+    background-color: rgba(13, 110, 253, 0.20) !important;
+    color: #dbe8ff !important;
+}
+body.dark-mode .bg-success-subtle {
+    background-color: rgba(25, 135, 84, 0.20) !important;
+    color: #d2f4e8 !important;
+}
+
+/* Chart image background */
+body.dark-mode .card-img-top {
+    background-color: #202020 !important;
+}
+
+/* Upload input */
+body.dark-mode input.form-control {
+    background-color: #222 !important;
+    border-color: #444 !important;
+    color: #e9e9e9 !important;
+}
+
+/* ---------------- BIG CHART UPDATES ---------------- */
+
+/* Bigger chart cards */
+.chart-card img {
+    width: 100% !important;
+    height: 420px !important;  /* Big charts */
+    object-fit: contain !important;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+/* Card inner spacing for charts */
+.chart-card {
+    padding: 1rem;
+}
+
+/* Wider chart layout for large screens (2 charts per row) */
+@media (min-width: 1200px) {
+    .chart-col {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+}
+</style>
+
+
+<div class="row justify-content-center w-100 m-0">
+    <div class="col-12">
+
+        <!-- Hero / Header -->
+        <div class="card shadow-sm border-0 mb-4 hero-card">
+            <div class="card-body py-4 py-md-4">
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                    <div>
+                        <h2 class="mb-2">
+                            🎓 Student Performance Analytics
+                        </h2>
+                        <p class="mb-1">
+                            Upload your student dataset to get <strong>Pass/Fail predictions</strong>,
+                            <strong>model accuracy</strong> and <strong>easy-to-read charts</strong> that explain
+                            which factors affect performance.
+                        </p>
+                        <div class="small">
+                            <span class="badge bg-primary-subtle text-primary border rounded-pill me-1">
+                                Step 1: Upload Data
+                            </span>
+                            <span class="badge bg-success-subtle text-success border rounded-pill me-1">
+                                Step 2: Run Model
+                            </span>
+                            <span class="badge bg-info-subtle text-info border rounded-pill">
+                                Step 3: View Insights
+                            </span>
+                        </div>
+                    </div>
+                    <div class="text-md-end">
+                        <div class="small mb-1">
+                            🔐 Your file is processed only for this analysis.
+                        </div>
+                        <div class="small">
+                            <span class="badge bg-dark text-light rounded-pill">
+                                Binary Classification: Pass / Fail
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Upload Card -->
+        <div class="card shadow-sm hover-card border-0">
+            <div class="card-body">
+
+                <h3 class="mb-2 text-center">Upload Student Dataset(file name :student_data)</h3>
+                <p class="text-muted text-center mb-4">
+                    Upload a <strong>CSV</strong> or <strong>Excel</strong> file to predict student performance
+                    (Pass/Fail) and visualize analytics like <strong>confusion matrix</strong>, 
+                    <strong>algorithm comparison</strong>, <strong>study time effect</strong>, 
+                    <strong>absences distribution</strong>, and more.
+                </p>
+
+                {% if error %}
+                    <div class="alert alert-danger small">
+                        <strong>⚠ Error:</strong> {{ error }}
+                    </div>
+                {% endif %}
+
+                <!-- Upload Form -->
+                <form method="POST" enctype="multipart/form-data" class="mb-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            Choose CSV / Excel File <span class="text-danger">*</span>
+                        </label>
+                        <input type="file" name="file" class="form-control" required>
+                        <div class="form-text small">
+                            The file should contain columns like:
+                            <code>school, sex, age, address, famsize, Pstatus, Medu, Fedu, Mjob, Fjob, reason,
+                            guardian, traveltime, studytime, failures, schoolsup, famsup, paid, activities, nursery,
+                            higher, internet, romantic, famrel, freetime, goout, Dalc, Walc, health, absences</code>.
+                            <br>
+                            The original <strong>training dataset</strong> also includes:
+                            <code>passed</code> column (<code>"yes"</code> = pass, <code>"no"</code> = fail).
+                        </div>
+                    </div>
+
+                    <!-- Tips Box -->
+                    <div class="border rounded-3 p-3 mb-3 bg-light">
+                        <h6 class="fw-semibold mb-2 small">💡 Tips for a Good Upload</h6>
+                        <ul class="small mb-0">
+                            <li>Make sure column names are spelled correctly and in lowercase (e.g., <code>studytime</code>, <code>absences</code>).</li>
+                            <li>Remove completely empty rows and obviously wrong values (e.g., negative age).</li>
+                            <li>If your file already has <code>passed</code>, it will be used to evaluate model accuracy more precisely.</li>
+                        </ul>
+                    </div>
+
+                    <button class="btn btn-primary w-100">
+                        🔍 Predict & Show Analytics
+                    </button>
+                </form>
+
+                <!-- How to Use This Page -->
+                <div class="border rounded-3 p-3 bg-body-tertiary small">
+                    <h6 class="fw-semibold mb-2">🧭 Quick Guide: How to Use This Page</h6>
+                    <ol class="mb-0 ps-3">
+                        <li>Prepare your dataset with basic student info and performance-related fields.</li>
+                        <li>Upload the CSV/Excel and click <strong>Predict & Show Analytics</strong>.</li>
+                        <li>Scroll down to see:
+                            <ul class="mb-1">
+                                <li>Prediction table with <strong>Pass/Fail</strong> and <strong>Model Probability (%)</strong>.</li>
+                                <li>Algorithm details (which method gave the best accuracy).</li>
+                                <li>Charts that explain how studytime, absences, failures, etc. influence results.</li>
+                            </ul>
+                        </li>
+                        <li>Use the insights to plan <strong>remedial classes</strong>, <strong>counseling</strong>, or 
+                            <strong>attendance tracking</strong> for at-risk students.
+                        </li>
+                    </ol>
+                </div>
+
+                {% if table %}
+                    <!-- Prediction Table -->
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                        <h5 class="mt-2 mb-0">Prediction Preview (First 20 Rows)</h5>
+                        <span class="badge bg-info-subtle text-info border rounded-pill small">
+                            Columns added by model: <code>Predicted</code>, <code>Probability(%)</code>
+                        </span>
+                    </div>
+
+                    <p class="text-muted small mb-2">
+                        This table shows a sample of your uploaded data combined with the model’s output:
+                        <br>
+                        <strong>Predicted</strong> → <code>yes</code> (likely to pass) / <code>no</code> (at risk of failing).
+                        <br>
+                        <strong>Probability(%)</strong> → the model’s confidence that the student will pass.
+                    </p>
+
+                    <div class="border rounded-3 p-2 bg-light mb-3 small">
+                        <strong>How to read this table:</strong>
+                        <ul class="mb-0 ps-3">
+                            <li>Look for students with <strong>Predicted = "no"</strong> or very <strong>low probability</strong>.</li>
+                            <li>Check their <code>studytime</code>, <code>absences</code>, and <code>failures</code> values.</li>
+                            <li>Use this list to plan <strong>extra coaching, parent meetings or mentoring</strong>.</li>
+                        </ul>
+                    </div>
+
+                    <div class="table-responsive mb-3">
+                        {{ table|safe }}
+                    </div>
+
+                    {% if download_link %}
+                        <a href="/download?file={{ download_link }}" class="btn btn-success mb-2">
+                            ⬇ Download Full Prediction CSV
+                        </a>
+                        <div class="small text-muted">
+                            The downloaded file will contain all original columns plus:
+                            <code>Predicted</code> and <code>Probability(%)</code> for every student.
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+<!-- Model / Algorithm Info -->
+{% if model_info %}
+<div class="card shadow-lg border-0 mt-4 model-section" style="border-radius: 1rem; overflow: hidden;">
+    
+    <!-- Header Bar -->
+    <div class="p-3 px-md-4 d-flex flex-column flex-md-row align-items-md-center justify-content-between"
+         style="background: linear-gradient(135deg, #4e54c8, #8f94fb); color: white;">
+        <div>
+            <h4 class="mb-0 d-flex align-items-center">
+                <span class="me-2">📊</span>
+                Model & Algorithm Details
+            </h4>
+            <div class="small">
+                The system evaluates multiple machine learning algorithms and automatically selects the best one
+                based on the <strong>student_data.csv</strong> dataset.
+            </div>
+        </div>
+    </div>
+
+    <!-- Body -->
+    <div class="card-body">
+
+        <div class="row g-4">
+
+            <!-- Best Algorithm Highlight -->
+            <div class="col-12 col-lg-6">
+                <div class="p-3 shadow-sm rounded-3 h-100 border"
+                     style="background: #f8faff; border-left: 5px solid #4e54c8;">
+                    
+                    <h6 class="fw-bold d-flex align-items-center mb-2">
+                        <span class="badge bg-success me-2">🏆 Best Algorithm</span>
+                        {{ model_info.name }}
+                    </h6>
+
+                    <p class="small mb-2">{{ model_info.details }}</p>
+
+                    <div class="small">
+                        <h6 class="fw-semibold mb-1">Why this algorithm was selected:</h6>
+                        <ul class="ps-3 mb-1">
+                            <li>Achieved the <strong>highest accuracy</strong> on the test dataset.</li>
+                            <li>Shows better <strong>precision, recall, & F1-score</strong> for the “pass” label.</li>
+                            <li>Produces fewer mistakes in the <strong>confusion matrix</strong>.</li>
+                            <li>Handles the dataset features effectively through preprocessing pipeline.</li>
+                            <li>Balances class imbalance using <strong>class weights</strong>.</li>
+                        </ul>
+                    </div>
+
+                    <div class="mt-2 small text-muted">
+                        The chosen model is automatically used to generate live predictions.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Algorithm Comparison (UPDATED with buttons & detail panel) -->
+            <div class="col-12 col-lg-6">
+                <div class="p-3 shadow-sm rounded-3 h-100 border"
+                     style="background: #fdfdff; border-left: 5px solid #8f94fb;">
+
+                    <h6 class="fw-semibold small mb-2">⚙️ Algorithms Evaluated (Based on student_data.csv)</h6>
+                    <p class="small mb-2">
+                        All algorithms below are trained and tested on the same dataset
+                        <code>student_data.csv</code> (with a train/test split). This ensures a fair comparison.
+                    </p>
+
+                    <div class="d-flex flex-wrap gap-2 mb-2 small">
+                        <span class="badge text-bg-primary">Logistic Regression</span>
+                        <span class="badge text-bg-dark">SVM (Linear)</span>
+                        <span class="badge text-bg-info text-dark">SVM (RBF)</span>
+                        <span class="badge text-bg-success">Random Forest</span>
+                    </div>
+
+                    {% if model_info.algos %}
+                    <div class="table-responsive small mb-2">
+                        <table class="table table-sm table-bordered table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr class="text-center">
+                                    <th>Algorithm</th>
+                                    <th>Accuracy (%)</th>
+                                    <th>Precision</th>
+                                    <th>Recall</th>
+                                    <th>F1-score</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for algo in model_info.algos %}
+                                <tr class="text-center {% if algo.is_best %}table-success{% endif %}">
+                                    <td class="fw-semibold">
+                                        {{ algo.name }}
+                                        {% if algo.is_best %}
+                                            <span class="badge bg-success ms-1">Best / Active</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary-subtle text-primary px-2 py-1">
+                                            {{ "%.2f"|format(algo.accuracy) }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info-subtle text-info px-2 py-1">
+                                            {{ "%.2f"|format(algo.precision) }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning-subtle text-warning px-2 py-1">
+                                            {{ "%.2f"|format(algo.recall) }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-dark-subtle text-dark px-2 py-1">
+                                            {{ "%.2f"|format(algo.f1) }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button type="button"
+                                                class="btn btn-outline-primary btn-sm algo-detail-btn"
+                                                data-name="{{ algo.name }}"
+                                                data-accuracy="{{ '%.2f'|format(algo.accuracy) }}"
+                                                data-precision="{{ '%.2f'|format(algo.precision) }}"
+                                                data-recall="{{ '%.2f'|format(algo.recall) }}"
+                                                data-f1="{{ '%.2f'|format(algo.f1) }}"
+                                                data-best="{% if algo.is_best %}yes{% else %}no{% endif %}">
+                                            🔍 View Details
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Dynamic detail panel -->
+                    <div id="algo-detail-panel"
+                         class="alert alert-info small mt-2 mb-0">
+                        <strong>Tip:</strong> Click <em>View Details</em> for any algorithm above to see
+                        a focused explanation based on its metrics for this dataset.
+                        <br>
+                        Currently active model: <strong>{{ model_info.name }}</strong>
+                        (used for all predictions on this page).
+                    </div>
+                    {% else %}
+                    <p class="small text-muted mb-0">
+                        Algorithm metrics are not available. Please run <code>train_model.py</code> to generate them.
+                    </p>
+                    {% endif %}
+
+                    <p class="small text-muted mt-2 mb-0">
+                        The <strong>Best / Active</strong> algorithm is automatically selected in the backend and
+                        used for Pass/Fail prediction on your uploaded data.
+                    </p>
+                </div>
+            </div>
+
+        <!-- Detailed Algorithm Metrics -->
+        {% if model_info.note %}
+        <hr class="my-4">
+
+        <div class="p-3 rounded-3 shadow-sm"
+             style="background: #fafafa; border-left: 4px solid #4e54c8;">
+            <h6 class="fw-bold small mb-2">📄 Detailed Performance Metrics</h6>
+            <p class="small mb-2 text-muted">
+                Below is the performance summary (Accuracy, Precision, Recall, F1) of each algorithm tested:
+            </p>
+
+            <pre class="small text-muted mb-0" 
+                 style="white-space: pre-wrap; background: #ffffff; padding: 0.75rem; border-radius: 0.5rem;">
+{{ model_info.note }}
+            </pre>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endif %}
+
+
+        <!-- Charts Section -->
+        {% if charts %}
+            <div class="card shadow-sm hover-card mt-4 border-0">
+                <div class="card-body">
+                    <h4 class="mb-3 text-center">📈 Data Insights & Visualizations</h4>
+                    <p class="text-muted small text-center mb-4">
+                        These charts show how the model behaves, how your dataset is distributed and which factors
+                        (study time, absences, failures, etc.) are related to passing or failing. All charts are enlarged
+                        for better readability on desktop.
+                    </p>
+
+                    <div class="row g-4">
+                        {% for key, info in charts.items() %}
+                            <div class="col-12 col-md-6 chart-col">
+                                <div class="card h-100 border-0 shadow-sm chart-card">
+                                    <img
+                                        src="{{ url_for('static', filename=info.file) }}"
+                                        class="card-img-top"
+                                        alt="{{ info.title }}"
+                                    >
+                                    <div class="card-body d-flex flex-column">
+                                        <h6 class="card-title d-flex align-items-center mb-2">
+                                            <span class="me-1">📊</span> {{ info.title }}
+                                        </h6>
+                                        <p class="card-text small text-muted mb-2">
+                                            {{ info.desc }}
+                                        </p>
+                                        <div class="mt-auto small">
+                                            <span class="badge bg-light text-secondary border rounded-pill">
+                                                Insight: focus on extreme values for early warning.
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mt-3 small text-muted">
+                        <strong>Tip:</strong> Use the charts together with the prediction table. For example, if many
+                        failing students have <strong>low studytime</strong> and <strong>high absences</strong>, you can
+                        design interventions specifically targeting these two factors.
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Feedback / Reasons for Pass/Fail -->
+        {% if feedback %}
+            <div class="card shadow-sm hover-card mt-4 border-0">
+                <div class="card-body">
+                    <h4 class="mb-3">💡 Reasons for Pass / Fail (Feedback)</h4>
+                    <p class="text-muted small">
+                        These points summarize how different features (studytime, absences, failures, going out,
+                        alcohol usage, etc.) differ between students predicted to pass and those predicted to fail.
+                        This helps teachers understand <strong>where to intervene</strong> and <strong>which behaviors
+                        to encourage or correct</strong>.
+                    </p>
+
+                    <div class="row g-3">
+                        {% for item in feedback %}
+                            <div class="col-12 col-md-6">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ item.title }}</h6>
+                                        <p class="card-text small mb-0">
+                                            {{ item.text }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Training Dataset Preview -->
+        <div class="card shadow-sm hover-card mt-4 border-0">
+            <div class="card-body">
+                <h4 class="mb-3">📂 Training Dataset Used by the Model</h4>
+                <p class="small text-muted">
+                    The model that generates Pass/Fail predictions is trained on a real student dataset.
+                    Below is a preview of the training data (first 20 rows). Each row is one student and
+                    the <code>passed</code> column is the final exam result used as the target during training.
+                </p>
+
+                <ul class="small">
+                    <li><strong>Feature columns</strong> (e.g., <code>studytime</code>, <code>absences</code>, <code>failures</code>) are used as inputs.</li>
+                    <li><strong>Target column</strong> <code>passed</code> contains "yes"/"no" and teaches the model what is pass or fail.</li>
+                    <li>This dataset is used to <strong>train</strong>, <strong>tune</strong>, and <strong>compare</strong> algorithms like Logistic Regression, SVM and Random Forest.</li>
+                </ul>
+
+                {% if train_table %}
+                    <div class="table-responsive mt-3">
+                        {{ train_table|safe }}
+                    </div>
+                {% else %}
+                    <p class="small text-muted mb-0">
+                        Training dataset preview is not available. Check if the backend passes <code>train_table</code>
+                        and the training CSV path is correct.
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Extra Explanation: Dataset Fields & Chart Meanings -->
+        <div class="card shadow-sm hover-card mt-4 mb-4 border-0">
+            <div class="card-body">
+                <h4 class="mb-3">📘 Understanding the Dataset & Charts</h4>
+
+                <!-- Dataset Fields -->
+                <h6 class="fw-semibold">1. Meaning of Important Dataset Fields</h6>
+                <p class="small text-muted">
+                    Each row in the dataset represents one student. The columns describe their background,
+                    behavior and performance-related factors. The model uses these to learn patterns connected
+                    to passing or failing.
+                </p>
+                <ul class="small">
+                    <li><strong>school</strong> – Student’s school (e.g., GP or MS). Useful to compare performance between institutions.</li>
+                    <li><strong>sex</strong> – Gender (M/F). Included for statistical analysis, not as a main decision factor.</li>
+                    <li><strong>age</strong> – Student age in years. Older students sometimes have jobs or responsibilities impacting study time.</li>
+                    <li><strong>address</strong> – Urban (U) or rural (R). Rural areas might mean less access to internet or tuition.</li>
+                    <li><strong>famsize</strong> – Family size (LE3 = ≤3, GT3 = >3). Larger families may mean more distractions or less quiet space.</li>
+                    <li><strong>Pstatus</strong> – Parents living together (T) or apart (A). Family situation can influence emotional stability.</li>
+                    <li><strong>Medu / Fedu</strong> – Mother’s / father’s education level (0–4). Higher values often mean more academic support at home.</li>
+                    <li><strong>Mjob / Fjob</strong> – Parent job type (teacher, health, services, at_home, other). Indirectly captures economic and educational background.</li>
+                    <li><strong>reason</strong> – Reason for choosing school (home, reputation, course, other).</li>
+                    <li><strong>guardian</strong> – Main guardian (mother, father, other).</li>
+                    <li><strong>traveltime</strong> – Time to school (1–4). Longer travel usually reduces free time and may cause fatigue.</li>
+                    <li><strong>studytime</strong> – Weekly study time (1–4). High values usually increase chance of passing.</li>
+                    <li><strong>failures</strong> – Previous class failures (0–4). A strong indicator of risk; many past failures = high danger zone.</li>
+                    <li><strong>schoolsup / famsup / paid / activities / nursery / higher / internet / romantic</strong> – Yes/No features describing support, extra classes, co-curriculars, internet availability and relationship status.</li>
+                    <li><strong>famrel, freetime, goout</strong> – Quality of family relationships, amount of free time and frequency of going out with friends (1–5).</li>
+                    <li><strong>Dalc / Walc</strong> – Workday and weekend alcohol consumption (1–5). Very high usage is often linked with poor academic discipline.</li>
+                    <li><strong>health</strong> – Self-reported health (1–5). Very low health may affect attendance and concentration.</li>
+                    <li><strong>absences</strong> – Number of school absences. One of the most practical signals for early intervention.</li>
+                    <li><strong>passed</strong> (in training data) – Final result label ("yes" = passed, "no" = failed). This is the target the model learns to predict.</li>
+                </ul>
+
+                <!-- Main Charts -->
+                <h6 class="fw-semibold mt-3">2. How to Read the Main Charts</h6>
+                <ul class="small">
+                    <li><strong>Predicted Pass/Fail Bar Chart</strong> – Shows how many students the model predicts to pass and fail. If the “Fail” bar is high, that batch may require strong academic support.</li>
+                    <li><strong>Study Time vs Performance</strong> – Compares average <code>studytime</code> for passed vs failed students. A clear difference supports the message “more study = better performance”.</li>
+                    <li><strong>Absences Distribution</strong> – Displays how many students reached different absence counts. Very long tails with high absences indicate groups to be monitored strictly.</li>
+                    <li><strong>Failures vs Performance</strong> – Shows average past failures for pass vs fail group. High failures in the fail group prove that <strong>history repeats</strong> unless extra help is given.</li>
+                    <li><strong>Correlation Heatmap</strong> – Indicates which numeric fields are positively or negatively related to passing. Strong colors show features that have big impact on outcome.</li>
+                    <li><strong>Confusion Matrix (Counts)</strong> – Tells how many students were correctly / incorrectly classified. This helps understand real-world performance of the model.</li>
+                    <li><strong>Confusion Matrix (Normalized)</strong> – Same as above but in percentages, so you can see performance per class even with imbalanced data.</li>
+                    <li><strong>Algorithm Comparison Chart</strong> – Shows accuracy of different algorithms. The highest bar is automatically chosen as the deployed model.</li>
+                </ul>
+
+                <!-- Interpretation of Pass / Fail -->
+                <h6 class="fw-semibold mt-3">3. Interpretation of “Pass” and “Fail” in This Project</h6>
+                <p class="small">
+                    The model is trained on real student records where <code>passed</code> is labeled as 
+                    <strong>"yes"</strong> or <strong>"no"</strong>. Using these examples, it learns patterns and then
+                    predicts for new students whether they are likely to <strong>pass</strong> or <strong>fail</strong>.
+                </p>
+                <ul class="small">
+                    <li><strong>Predicted = "yes"</strong> → Student is likely to pass. Typically has <strong>higher studytime</strong>, <strong>fewer absences</strong>, and <strong>fewer past failures</strong>.</li>
+                    <li><strong>Predicted = "no"</strong> → Student is at risk of failing. Often has <strong>low studytime</strong>, <strong>more absences</strong>, <strong>multiple past failures</strong> or risky behavior (e.g., high alcohol, too much going out).</li>
+                    <li><strong>Probability(%)</strong> – Model’s confidence about a pass. Borderline values (50–65%) indicate students who <strong>still need attention</strong> even if prediction is "yes".</li>
+                </ul>
+
+                <!-- Default Training Dataset -->
+                <h6 class="fw-semibold mt-3">4. About the Default Training Dataset</h6>
+                <p class="small mb-0">
+                    The underlying model is trained on a standard student performance dataset that includes demographic,
+                    behavioral and academic information of real students. It learns general patterns like:
+                    <strong>“more studytime + fewer absences → higher chance of passing”</strong>. When you upload your
+                    own data, these learned patterns are applied to your students to give <strong>consistent</strong> and
+                    <strong>data-driven predictions</strong>.
+                </p>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- 🔽 JS: Algorithm detail panel logic -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const buttons = document.querySelectorAll(".algo-detail-btn");
+    const panel = document.getElementById("algo-detail-panel");
+    if (!buttons.length || !panel) return;
+
+    buttons.forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            const name = this.dataset.name || "";
+            const acc = this.dataset.accuracy || "";
+            const prec = this.dataset.precision || "";
+            const rec = this.dataset.recall || "";
+            const f1 = this.dataset.f1 || "";
+            const best = this.dataset.best === "yes";
+
+            panel.classList.remove("alert-info", "alert-success");
+            panel.classList.add(best ? "alert-success" : "alert-info");
+
+            panel.innerHTML = `
+                <strong>Algorithm Selected:</strong> ${name}<br>
+                <strong>Based on dataset:</strong> <code>student_data.csv</code> (train/test split)<br><br>
+                <ul class="mb-1">
+                    <li><strong>Accuracy:</strong> ${acc}% (overall correct predictions)</li>
+                    <li><strong>Precision (Pass):</strong> ${prec} – when it predicts "pass", how often it is correct.</li>
+                    <li><strong>Recall (Pass):</strong> ${rec} – out of all real pass students, how many were found.</li>
+                    <li><strong>F1-score (Pass):</strong> ${f1} – balance between precision and recall.</li>
+                </ul>
+                ${best
+                    ? "<span class='badge bg-success'>This is the active model used for predictions.</span>"
+                    : "<span class='badge bg-secondary'>This model was evaluated but not selected as best.</span>"
+                }
+            `;
+        });
+    });
+});
+</script>
+
+{% endblock %}

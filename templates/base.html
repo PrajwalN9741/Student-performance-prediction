@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Student Performance Prediction{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --dark-bg: #121212;
+            --dark-card: #1c1c1c;
+            --dark-text: #dcdcdc;
+        }
+
+        body {
+            font-family: "Poppins", sans-serif;
+            background: #f2f5fa;
+            color: #212529;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        /* ----- FULL DESKTOP WIDTH ----- */
+        .main-container {
+            width: 100%;
+            max-width: 100%;
+            padding-left: 2rem;
+            padding-right: 2rem;
+        }
+
+        /* Navbar */
+        .navbar {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Smooth card hover */
+        .hover-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border-radius: 0.8rem;
+        }
+        .hover-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 18px rgba(0,0,0,0.15);
+        }
+
+        /* Footer styling */
+        footer {
+            background: #ffffff;
+        }
+
+        /* Dark Mode */
+        body.dark-mode {
+            background-color: var(--dark-bg) !important;
+            color: var(--dark-text) !important;
+        }
+        body.dark-mode .navbar {
+            background-color: #1f1f1f !important;
+        }
+        body.dark-mode .card {
+            background-color: var(--dark-card) !important;
+            color: var(--dark-text) !important;
+        }
+        body.dark-mode footer {
+            background-color: #1f1f1f !important;
+            color: var(--dark-text) !important;
+        }
+        body.dark-mode .table {
+            color: var(--dark-text) !important;
+        }
+
+        /* Dark mode button */
+        #darkToggle {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<!-- FULL-WIDTH NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+    <div class="container-fluid main-container">
+        <a class="navbar-brand fw-bold" href="{{ url_for('upload_file') }}">
+            🎓 Student Performance Predictor
+        </a>
+        <button class="btn btn-light btn-sm ms-auto" id="darkToggle">
+            🌙 Dark Mode
+        </button>
+    </div>
+</nav>
+
+<!-- FULL-WIDTH MAIN CONTENT -->
+<div class="container-fluid main-container my-4">
+    {% block content %}{% endblock %}
+</div>
+
+<!-- FULL-WIDTH FOOTER -->
+<footer class="text-center py-3 border-top">
+    <small>&copy; 2025 Student Performance Project — Designed with ❤️</small>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Dark Mode Toggle Script -->
+<script>
+    const toggle = document.getElementById("darkToggle");
+
+    toggle.addEventListener("click", () => {
+        document.body.classList.toggle("dark-mode");
+        toggle.textContent =
+            document.body.classList.contains("dark-mode") ? "☀️ Light Mode" : "🌙 Dark Mode";
+    });
+</script>
+
+</body>
+</html>
