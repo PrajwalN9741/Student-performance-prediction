@@ -45,8 +45,10 @@ print(y.value_counts().rename({0: "Fail (0)", 1: "Pass (1)"}))
 
 # ---------- Small dataset warning ----------
 if n_samples < 100:
-    print("\n⚠ WARNING: Dataset is small "
-          f"({n_samples} samples). Model accuracy may not generalize well.\n")
+    print(
+        "\nWARNING: Dataset is small "
+        f"({n_samples} samples). Model accuracy may not generalize well.\n"
+    )
 
 # ---------- 2. Column types ----------
 categorical_features = [
@@ -113,20 +115,20 @@ models = {
 }
 
 # ---------- 5. Train/test split ----------
-# You can increase test_size if you want more test samples (e.g. 0.3 or 0.4)
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
 
 # ---------- 5b. Prepare Stratified K-Fold ----------
-# Use min(class_count, 5) to avoid errors on tiny datasets
 class_counts = y.value_counts()
 min_class_count = class_counts.min()
 cv_splits = min(5, int(min_class_count))
 
 if cv_splits < 2:
-    print("\n⚠ Not enough samples per class for cross-validation. "
-          "Skipping CV and using only train/test split.\n")
+    print(
+        "\nWARNING: Not enough samples per class for cross-validation. "
+        "Skipping CV and using only train/test split.\n"
+    )
     use_cv = False
 else:
     use_cv = True
@@ -140,7 +142,7 @@ else:
 # ---------- 6. Train & evaluate ----------
 metrics = {}
 best_name = None
-best_score_for_selection = -1.0  # we will use CV mean if available, else test accuracy
+best_score_for_selection = -1.0
 best_pipeline = None
 
 for name, clf in models.items():
@@ -199,7 +201,7 @@ for name, clf in models.items():
         "cv_std_accuracy": cv_std,
     }
 
-    # ---------- Model selection (prefer CV mean if available) ----------
+    # ---------- Model selection ----------
     if cv_mean is not None:
         score_for_selection = cv_mean
     else:
@@ -220,7 +222,7 @@ else:
 
 # ---------- 7. Save best model ----------
 joblib.dump(best_pipeline, "model.pkl")
-print("✅ Best model saved as model.pkl")
+print("Best model saved as model.pkl")
 
 # ---------- 8. Charts folder ----------
 CHART_FOLDER = os.path.join("static", "charts")
@@ -238,7 +240,7 @@ cm_raw_path = os.path.join(CHART_FOLDER, "confusion_matrix_raw.png")
 plt.tight_layout()
 plt.savefig(cm_raw_path)
 plt.close()
-print(f"✅ Raw confusion matrix saved to {cm_raw_path}")
+print(f"Raw confusion matrix saved to {cm_raw_path}")
 
 cm_norm = confusion_matrix(y_test, y_pred_best, labels=[0, 1], normalize="true")
 plt.figure(figsize=(4, 4))
@@ -249,7 +251,7 @@ cm_norm_path = os.path.join(CHART_FOLDER, "confusion_matrix_norm.png")
 plt.tight_layout()
 plt.savefig(cm_norm_path)
 plt.close()
-print(f"✅ Normalized confusion matrix saved to {cm_norm_path}")
+print(f"Normalized confusion matrix saved to {cm_norm_path}")
 
 # ---------- 10. Save metrics ----------
 algo_info = {
@@ -262,7 +264,7 @@ algo_info = {
 }
 with open("algo_metrics.json", "w") as f:
     json.dump(algo_info, f, indent=4)
-print("✅ Algorithm metrics + confusion matrix saved in algo_metrics.json")
+print("Algorithm metrics and confusion matrices saved in algo_metrics.json")
 
 # ---------- 11. Accuracy comparison chart ----------
 names = list(metrics.keys())
@@ -287,7 +289,7 @@ plt.tight_layout()
 algo_chart_path = os.path.join(CHART_FOLDER, "algo_comparison.png")
 plt.savefig(algo_chart_path)
 plt.close()
-print(f"✅ Algorithm comparison chart saved to {algo_chart_path}")
+print(f"Algorithm comparison chart saved to {algo_chart_path}")
 
 # ---------- 12. Feature importance + SHAP for best tree-based model ----------
 if best_name in ["Random Forest", "XGBoost"]:
@@ -306,18 +308,27 @@ if best_name in ["Random Forest", "XGBoost"]:
     feat_imp_path = os.path.join(CHART_FOLDER, "feature_importance.png")
     plt.savefig(feat_imp_path)
     plt.close()
-    print(f"✅ Feature importance chart saved to {feat_imp_path}")
+    print(f"Feature importance chart saved to {feat_imp_path}")
 
     # SHAP summary
-    print("Computing SHAP values (may take a bit on larger datasets)...")
+    print("Computing SHAP values for the best tree-based model...")
     explainer = shap.TreeExplainer(best_pipeline.named_steps["model"])
     X_test_transformed = best_pipeline.named_steps["preprocess"].transform(X_test)
     shap_values = explainer.shap_values(X_test_transformed)
-    shap.summary_plot(shap_values, feature_names, show=False)
+
+    # Use X_test_transformed as features and pass feature_names separately
+    shap.summary_plot(
+        shap_values,
+        X_test_transformed,
+        feature_names=feature_names,
+        show=False
+    )
     shap_path = os.path.join(CHART_FOLDER, "shap_summary.png")
     plt.savefig(shap_path)
     plt.close()
-    print(f"✅ SHAP summary plot saved to {shap_path}")
+    print(f"SHAP summary plot saved to {shap_path}")
 else:
-    print(f"\nℹ Best model is {best_name}, which is not tree-based. "
-          "Skipping feature importance and SHAP plots.\n")
+    print(
+        f"\nInfo: Best model is {best_name}, which is not tree-based. "
+        "Skipping feature importance and SHAP plots.\n"
+    )
