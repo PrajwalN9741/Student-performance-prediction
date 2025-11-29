@@ -12,29 +12,30 @@ import matplotlib.pyplot as plt
 
 app = Flask(__name__)
 
-# Load trained best model (Pipeline)
-MODEL = joblib.load("model.pkl")
+# ---------- PATH SETUP (ABSOLUTE) ----------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Try to load algorithm comparison metrics (+ confusion matrices etc.)
-try:
-    with open("algo_metrics.json", "r") as f:
-        ALGO_METRICS = json.load(f)
-except Exception:
-    ALGO_METRICS = None
-
-# Folders
-UPLOAD_FOLDER = "uploads"
-OUTPUT_FOLDER = "outputs"
-CHART_FOLDER = os.path.join("static", "charts")
+UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
+OUTPUT_FOLDER = os.path.join(BASE_DIR, "outputs")
+CHART_FOLDER = os.path.join(BASE_DIR, "static", "charts")
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 os.makedirs(CHART_FOLDER, exist_ok=True)
 
-# Default dataset path (used for default predictions on GET)
-DEFAULT_DATA_FILE = os.path.join("student_data.csv")
+# ---------- MODEL + METRICS LOAD ----------
+MODEL = joblib.load(os.path.join(BASE_DIR, "model.pkl"))
 
-# Training dataset preview (we reuse DEFAULT_DATA_FILE as training data)
+try:
+    with open(os.path.join(BASE_DIR, "algo_metrics.json"), "r") as f:
+        ALGO_METRICS = json.load(f)
+except Exception:
+    ALGO_METRICS = None
+
+# Default dataset path (used for default predictions on GET)
+DEFAULT_DATA_FILE = os.path.join(UPLOAD_FOLDER, "student_data.csv")
+
+# ---------- TRAINING DATA PREVIEW ----------
 TRAIN_TABLE_HTML = None
 try:
     if os.path.exists(DEFAULT_DATA_FILE):
@@ -66,7 +67,6 @@ def create_charts(df):
     if "Predicted" in df.columns:
         plt.figure()
         counts = df["Predicted"].value_counts()
-        # Ensure consistent order: yes then no
         counts = counts.reindex(["yes", "no"]).fillna(0)
         counts.plot(kind="bar")
         plt.title("Count of Predicted Pass vs Fail")
@@ -150,7 +150,7 @@ def create_charts(df):
                 "title": "Past Failures vs Performance",
                 "desc": (
                     "This chart shows the average number of previous subject failures for students "
-                    "predicted to pass vs fail. Higher average failures for the 'fail' bar indicates "
+                    "predicted to pass vs fail. Higher average failures for the 'fail' bar indicate "
                     "that past academic history is strongly related to current risk."
                 ),
             }
@@ -239,9 +239,9 @@ def create_charts(df):
             "file": "charts/algo_comparison.png",
             "title": "Algorithm Accuracy Comparison",
             "desc": (
-                "This bar chart compares the accuracy of different machine learning algorithms: "
-                "Logistic Regression, SVM (linear and RBF kernels), Random Forest, and XGBoost. "
-                "The highest bar represents the algorithm that achieved the best accuracy on the test data."
+                "This bar chart compares the accuracy of different machine learning algorithms. "
+                "Depending on training, it may show cross-validation mean accuracy or test accuracy. "
+                "The highest bar represents the algorithm selected as the best model."
             ),
         }
 
@@ -380,7 +380,7 @@ def generate_feedback(df):
 def get_model_info():
     """
     Returns info about which algorithm is best and how others performed.
-    Also returns a structured list of algorithms for table & buttons in UI.
+    Supports new metrics from train_model.py (CV + test accuracy).
     """
     if not ALGO_METRICS:
         return {
@@ -391,49 +391,70 @@ def get_model_info():
         }
 
     best_name = ALGO_METRICS.get("best_model", "Unknown")
+    selection_metric = ALGO_METRICS.get("selection_metric", "test_accuracy")
     metrics = ALGO_METRICS.get("metrics", {})
 
     algo_rows = []
     text_lines = []
 
     for name, m in metrics.items():
-        acc = float(m.get("accuracy", 0.0)) * 100.0
+        cv_mean = m.get("cv_mean_accuracy", None)
+        test_acc = m.get("test_accuracy", 0.0)
+
+        if selection_metric == "cv_mean_accuracy" and cv_mean is not None:
+            acc_used = cv_mean
+            acc_label = "CV mean accuracy"
+        else:
+            acc_used = test_acc
+            acc_label = "Test accuracy"
+
+        acc_percent = float(acc_used) * 100.0
+
         prec = float(m.get("precision_pass", 0.0))
         rec = float(m.get("recall_pass", 0.0))
         f1 = float(m.get("f1_pass", 0.0))
 
         text_lines.append(
-            f"{name}: {acc:.2f}% accuracy, "
+            f"{name}: {acc_percent:.2f}% ({acc_label}), "
             f"Precision={prec:.2f}, Recall={rec:.2f}, F1={f1:.2f}"
         )
 
         algo_rows.append({
             "name": name,
-            "accuracy": round(acc, 2),
+            "accuracy": round(acc_percent, 2),
             "precision": round(prec, 2),
             "recall": round(rec, 2),
             "f1": round(f1, 2),
             "is_best": (name == best_name),
         })
 
+    if selection_metric == "cv_mean_accuracy":
+        metric_text = (
+            "The best model is selected using cross-validation mean accuracy "
+            "(StratifiedKFold), which is more reliable for small datasets."
+        )
+    else:
+        metric_text = (
+            "The best model is selected based on its accuracy on the held-out test set."
+        )
+
     details = (
         "The system evaluates multiple supervised learning algorithms on the student performance "
         "dataset: Logistic Regression, Support Vector Machines (with linear and RBF kernels), "
-        "Random Forest, and XGBoost. These models were trained on the same preprocessed data and "
-        "their performance was compared using accuracy, precision, recall and F1-score."
-        f" For this dataset, the best-performing algorithm is <b>{best_name}</b>."
+        "Random Forest, and XGBoost. These models are trained on the same preprocessed data and "
+        "their performance is compared using accuracy, precision, recall and F1-score. "
+        f"For this dataset, the best-performing algorithm is <b>{best_name}</b>. "
+        + metric_text
     )
 
     note = (
-        "Detailed performance of each algorithm on the test set:\n"
+        "Detailed performance of each algorithm:\n"
         + "\n".join(text_lines)
         + "\n\n"
-          "• Logistic Regression: A simple and interpretable linear model used as a baseline.\n"
-          "• SVM (linear / RBF): Can handle both linear and non-linear decision boundaries.\n"
-          "• Random Forest: An ensemble of decision trees, good for mixed-type features and "
-          "capturing complex interactions.\n"
-          "• XGBoost: A powerful gradient boosting model that often achieves very strong "
-          "performance on tabular data, especially with imbalanced classes."
+          "• Logistic Regression: A simple and interpretable linear baseline model.\n"
+          "• SVM (linear / RBF): Handles both linear and non-linear decision boundaries.\n"
+          "• Random Forest: An ensemble of decision trees, very effective on tabular data.\n"
+          "• XGBoost: A powerful gradient boosting algorithm, often strong on structured data."
     )
 
     return {
